@@ -1,61 +1,73 @@
 pipeline {
-    agent any
+    agent any 
 
-    tools {
-        // تأكد من ضبط اسم إصدار بايثون وملحق الـ pip في خادم Jenkins لديك (Manage Jenkins > Tools)
-        // أو يمكنك استبداله بالاعتماد على بايثون المثبت في النظام مباشرة.
-        // يمكننا تبسيط الأوامر للاعتماد على بيئة النظام مباشرة كالتالي:
+    // متغيرات عامة تستخدم داخل مراحل الـ Pipeline
+    environment {
+        REGISTRY = "my-docker-registry.internal" // عنوان سجل صور Docker الخاص بالشركة
+        IMAGE_NAME = "ecommerce-api"             // اسم صورة الحاوية الخاصة بالتطبيق
+        TAG = "${env.BUILD_NUMBER}"              // إصدار الصورة يعتمد على رقم البناء الحالي في Jenkins
     }
 
+    // المراحل الأساسية لمسار العمل (CI/CD Stages)
     stages {
+        
+        // 1. مرحلة سحب الكود
         stage('Checkout Code') {
             steps {
-                // جلب الكود من المستودع الخاص بك
-                checkout scm
+                checkout scm // سحب أحدث نسخة من الكود البرمجي من مستودع GitHub
             }
         }
 
-        stage('Setup Virtual Environment') {
+        // 2. مرحلة فحص الجودة (Static Code Analysis)
+        stage('Code Linting & Static Analysis') {
             steps {
-                sh '''
-                    python3 -m venv venv
-                    ./venv/bin/python -m pip install --upgrade pip
-                    ./venv/bin/pip install -r requirements.txt
-                '''
+                sh 'pip install flake8'         // تثبيت أداة الفحص النحوي لكود بايثون
+                sh 'flake8 app/ tests/'         // فحص مجلد التطبيق والاختبارات بحثاً عن أي أخطاء برمجية
             }
         }
 
-        stage('Code Quality (Flake8)') {
+        // 3. مرحلة تشغيل الخدمات عبر Docker Compose
+        stage('Build & Run Services via Docker Compose') {
             steps {
-                // فحص جودة الكود ومعايير كتابته
-                sh '''
-                    ./venv/bin/flake8 app.py test_app.py
-                '''
+                sh 'docker-compose up -d --build' // بناء وتشغيل حاوية الـ API وقاعدة البيانات في الخلفية
             }
         }
 
-        stage('Run Tests (Pytest)') {
+        // 4. مرحلة تشغيل اختبارات Pytest واستخراج تقارير التغطية
+        stage('Run Pytest & Generate Coverage Reports') {
             steps {
-                // تنفيذ اختبارات الوحدات البرمجية وتوليد تقرير
-                sh '''
-                    ./venv/bin/pytest --junitxml=test-reports/results.xml
-                '''
+                // تشغيل الاختبارات داخل الحاوية وتوليد تقرير بصيغة XML
+                sh 'docker-compose exec -T web pytest --cov=app --junitxml=reports/pytest-results.xml'
             }
-            post {
-                always {
-                    // حفظ نتائج الاختبارات في لوحة تحكم Jenkins
-                    junit 'test-reports/results.xml'
-                }
+        }
+
+        // 5. مرحلة بناء صورة الإنتاج النهائية (Production Docker Image)
+        stage('Build Production Docker Image') {
+            steps {
+                // بناء صورة Docker النهائية ووسمها بالمتغيرات المعرفة مسبقاً
+                sh 'docker build -t ${REGISTRY}/${IMAGE_NAME}:${TAG} .'
+            }
+        }
+
+        // 6. مرحلة الفحص الأمني والثغرات
+        stage('Security & Vulnerability Scan') {
+            steps {
+                echo "Running security scan on container image..." // مكان مخصص لإضافة أدوات فحص الأمان (مثل Trivy)
             }
         }
     }
 
+    // الإجراءات التي تنفذ بعد انتهاء المراحل (سواء نجاحاً أو فشلاً)
     post {
+        always {
+            junit 'reports/pytest-results.xml'   // قراءة تقارير الاختبارات وعرضها في لوحة تحكم Jenkins
+            sh 'docker-compose down -v'          // إيقاف وحذف الحاويات وقاعدة البيانات لتنظيف البيئة دائماً
+        }
         success {
-            echo '🎉 تم بناء المشروع واجتياز كافة الاختبارات بنجاح تام!'
+            echo "Pipeline completed successfully! Microservice built and tested." // رسالة تظهر عند نجاح كل المراحل
         }
         failure {
-            echo '❌ فشل المشروع في إحدى مراحل الفحص أو الاختبار!'
+            echo "Pipeline failed. Check test reports and logs." // رسالة تنبيه تظهر إذا حدث خطأ في أي مرحلة
         }
     }
 }
