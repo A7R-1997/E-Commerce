@@ -10,3 +10,18 @@ docker-compose exec -e PYTHONPATH=. web pytest --cov=app -v
 git init
 git remote add origin https://github.com/A7R-1997/E-Commerce.git
 git add .
+git commit -m "Initial commit: E-Commerce Microservice with FastAPI, Pytest, Docker and Jenkinsfile"
+git branch -M main
+git push -u origin main
+
+
+
+
+
+
+http://localhost:9090/
+
+
+
+Admin
+Admin_1997

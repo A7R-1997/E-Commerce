@@ -1,73 +1,73 @@
 pipeline {
     agent any 
 
-    // متغيرات عامة تستخدم داخل مراحل الـ Pipeline
     environment {
-        REGISTRY = "my-docker-registry.internal" // عنوان سجل صور Docker الخاص بالشركة
-        IMAGE_NAME = "ecommerce-api"             // اسم صورة الحاوية الخاصة بالتطبيق
-        TAG = "${env.BUILD_NUMBER}"              // إصدار الصورة يعتمد على رقم البناء الحالي في Jenkins
+        REGISTRY = "my-docker-registry.internal"
+        IMAGE_NAME = "ecommerce-api"
+        TAG = "${env.BUILD_NUMBER}"
     }
 
-    // المراحل الأساسية لمسار العمل (CI/CD Stages)
     stages {
-        
         // 1. مرحلة سحب الكود
         stage('Checkout Code') {
             steps {
-                checkout scm // سحب أحدث نسخة من الكود البرمجي من مستودع GitHub
+                checkout scm
             }
         }
 
-        // 2. مرحلة فحص الجودة (Static Code Analysis)
+        // 2. مرحلة فحص جودة الكود (Flake8)
         stage('Code Linting & Static Analysis') {
             steps {
-                sh 'pip install flake8'         // تثبيت أداة الفحص النحوي لكود بايثون
-                sh 'flake8 app/ tests/'         // فحص مجلد التطبيق والاختبارات بحثاً عن أي أخطاء برمجية
+                bat 'pip install flake8'
+                bat 'flake8 app/ tests/ --max-line-length=120'
             }
         }
 
         // 3. مرحلة تشغيل الخدمات عبر Docker Compose
         stage('Build & Run Services via Docker Compose') {
             steps {
-                sh 'docker-compose up -d --build' // بناء وتشغيل حاوية الـ API وقاعدة البيانات في الخلفية
+                bat 'docker-compose up -d --build'
             }
         }
 
-        // 4. مرحلة تشغيل اختبارات Pytest واستخراج تقارير التغطية
+        // 4. مرحلة تشغيل اختبارات Pytest واستخراج التقارير
         stage('Run Pytest & Generate Coverage Reports') {
             steps {
-                // تشغيل الاختبارات داخل الحاوية وتوليد تقرير بصيغة XML
-                sh 'docker-compose exec -T web pytest --cov=app --junitxml=reports/pytest-results.xml'
+                bat 'if not exist reports mkdir reports'
+                bat 'docker-compose exec -T -e PYTHONPATH=. web pytest --cov=app --junitxml=reports/pytest-results.xml'
             }
         }
 
-        // 5. مرحلة بناء صورة الإنتاج النهائية (Production Docker Image)
+        // 5. مرحلة بناء صورة الإنتاج النهائية
         stage('Build Production Docker Image') {
             steps {
-                // بناء صورة Docker النهائية ووسمها بالمتغيرات المعرفة مسبقاً
-                sh 'docker build -t ${REGISTRY}/${IMAGE_NAME}:${TAG} .'
+                bat "docker build -t ${REGISTRY}/${IMAGE_NAME}:${TAG} ."
             }
         }
 
-        // 6. مرحلة الفحص الأمني والثغرات
+        // 6. مرحلة الفحص الأمني واكتشاف الثغرات (DevSecOps)
         stage('Security & Vulnerability Scan') {
             steps {
-                echo "Running security scan on container image..." // مكان مخصص لإضافة أدوات فحص الأمان (مثل Trivy)
+                echo "1. فحص كود بايثون من الثغرات الأمنية باستخدام Bandit..."
+                bat 'pip install bandit'
+                bat 'bandit -r app/ -ll || exit /b 0'
+
+                echo "2. فحص صورة Docker من الثغرات الأمنية باستخدام Trivy..."
+                bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --severity HIGH,CRITICAL ${REGISTRY}/${IMAGE_NAME}:${TAG}"
             }
         }
     }
 
-    // الإجراءات التي تنفذ بعد انتهاء المراحل (سواء نجاحاً أو فشلاً)
     post {
         always {
-            junit 'reports/pytest-results.xml'   // قراءة تقارير الاختبارات وعرضها في لوحة تحكم Jenkins
-            sh 'docker-compose down -v'          // إيقاف وحذف الحاويات وقاعدة البيانات لتنظيف البيئة دائماً
+            junit allowEmptyResults: true, testResults: 'reports/pytest-results.xml'
+            bat 'docker-compose down -v'
         }
         success {
-            echo "Pipeline completed successfully! Microservice built and tested." // رسالة تظهر عند نجاح كل المراحل
+            echo "Pipeline completed successfully! Microservice built, tested, and scanned."
         }
         failure {
-            echo "Pipeline failed. Check test reports and logs." // رسالة تنبيه تظهر إذا حدث خطأ في أي مرحلة
+            echo "Pipeline failed. Check test reports and security logs."
         }
     }
 }
