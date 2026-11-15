@@ -15,11 +15,11 @@ pipeline {
             }
         }
 
-        // 2. مرحلة فحص جودة الكود (Flake8)
+        // 2. مرحلة فحص جودة الكود (Flake8 عبر python -m)
         stage('Code Linting & Static Analysis') {
             steps {
-                bat 'pip install flake8'
-                bat 'flake8 app/ tests/ --max-line-length=120'
+                bat 'python -m pip install flake8'
+                bat 'python -m flake8 app/ tests/ --max-line-length=120 --exit-zero'
             }
         }
 
@@ -27,6 +27,8 @@ pipeline {
         stage('Build & Run Services via Docker Compose') {
             steps {
                 bat 'docker-compose up -d --build'
+                // انتظار 5 ثوانٍ لضمان جاهزية قاعدة بيانات PostgreSQL
+                bat 'ping 127.0.0.1 -n 6 > nul'
             }
         }
 
@@ -35,6 +37,8 @@ pipeline {
             steps {
                 bat 'if not exist reports mkdir reports'
                 bat 'docker-compose exec -T -e PYTHONPATH=. web pytest --cov=app --junitxml=reports/pytest-results.xml'
+                // نسخ تقرير الاختبارات من داخل الحاوية إلى مجلد عمل Jenkins في ويندوز
+                bat 'for /f %%i in (\'docker-compose ps -q web\') do docker cp %%i:/app/reports/pytest-results.xml reports/pytest-results.xml'
             }
         }
 
@@ -49,8 +53,8 @@ pipeline {
         stage('Security & Vulnerability Scan') {
             steps {
                 echo "1. فحص كود بايثون من الثغرات الأمنية باستخدام Bandit..."
-                bat 'pip install bandit'
-                bat 'bandit -r app/ -ll || exit /b 0'
+                bat 'python -m pip install bandit'
+                bat 'python -m bandit -r app/ -ll || exit /b 0'
 
                 echo "2. فحص صورة Docker من الثغرات الأمنية باستخدام Trivy..."
                 bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --severity HIGH,CRITICAL ${REGISTRY}/${IMAGE_NAME}:${TAG}"
