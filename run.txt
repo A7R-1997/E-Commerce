@@ -1,3 +1,15 @@
+fastapi==0.110.0          → إطار ويب لبناء REST API مع تحقق وتوثيق تلقائي
+uvicorn==0.28.0           → خادم ASGI يشغّل تطبيق FastAPI ويستمع للطلبات
+sqlalchemy==2.0.28        → ORM يحوّل كلاسات Python إلى جداول واستعلامات SQL
+psycopg2-binary==2.9.9    → مشغّل الاتصال الفعلي بقاعدة بيانات PostgreSQL
+pytest==8.1.0             → إطار تشغيل الاختبارات الآلية
+pytest-cov==4.1.0         → إضافة تحسب نسبة تغطية الكود المُختبَر
+requests==2.31.0          → عميل HTTP لإرسال الطلبات (يستخدمه TestClient داخلياً)
+pydantic==2.6.4           → التحقق الآلي من صحة أنواع البيانات المدخلة
+httpx==0.26.0             → عميل HTTP غير متزامن، الأساس الحديث لـ TestClient
+
+
+
 docker-compose up --build
 
 pip install -r requirements.txt
