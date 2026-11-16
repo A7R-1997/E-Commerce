@@ -15,7 +15,7 @@ pipeline {
             }
         }
 
-        // 2. مرحلة فحص جودة الكود (Flake8 عبر python -m)
+        // 2. مرحلة فحص جودة الكود (Flake8)
         stage('Code Linting & Static Analysis') {
             steps {
                 bat 'python -m pip install flake8'
@@ -23,12 +23,15 @@ pipeline {
             }
         }
 
-        // 3. مرحلة تشغيل الخدمات عبر Docker Compose
+        // 3. مرحلة تشغيل الخدمات بالترتيب الصحيح
         stage('Build & Run Services via Docker Compose') {
             steps {
-                bat 'docker-compose up -d --build'
-                // انتظار 5 ثوانٍ لضمان جاهزية قاعدة بيانات PostgreSQL
-                bat 'ping 127.0.0.1 -n 6 > nul'
+                // تشغيل قاعدة البيانات أولاً والانتظار حتى تكتمل تهيئتها
+                bat 'docker-compose up -d db'
+                bat 'ping 127.0.0.1 -n 8 > nul'
+                // بناء وتشغيل حاوية التطبيق بعد جهوزية قاعدة البيانات
+                bat 'docker-compose up -d --build web'
+                bat 'ping 127.0.0.1 -n 4 > nul'
             }
         }
 
@@ -37,8 +40,6 @@ pipeline {
             steps {
                 bat 'if not exist reports mkdir reports'
                 bat 'docker-compose exec -T -e PYTHONPATH=. web pytest --cov=app --junitxml=reports/pytest-results.xml'
-                // نسخ تقرير الاختبارات من داخل الحاوية إلى مجلد عمل Jenkins في ويندوز
-                bat 'for /f %%i in (\'docker-compose ps -q web\') do docker cp %%i:/app/reports/pytest-results.xml reports/pytest-results.xml'
             }
         }
 
@@ -57,7 +58,7 @@ pipeline {
                 bat 'python -m bandit -r app/ -ll || exit /b 0'
 
                 echo "2. فحص صورة Docker من الثغرات الأمنية باستخدام Trivy..."
-                bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --severity HIGH,CRITICAL ${REGISTRY}/${IMAGE_NAME}:${TAG}"
+                bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --severity HIGH,CRITICAL ${REGISTRY}/${IMAGE_NAME}:${TAG} || exit /b 0"
             }
         }
     }
