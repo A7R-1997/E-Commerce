@@ -46,10 +46,17 @@ def health_check():
     return {"status": "healthy", "service": "e-commerce-api"}
 
 
-# ⚠️ ثغرة مقصودة للعرض: Shell Injection (B602 - High)
+# ⚠️ ثغرة 1: Shell Injection (B602 - High)
 @app.get("/ping-host")
 def ping_host(host: str):
     result = subprocess.run(
         f"ping -c 1 {host}", shell=True, capture_output=True, text=True
     )
     return {"output": result.stdout}
+
+
+# ⚠️ ثغرة 2: استخدام eval() لتنفيذ كود عشوائي (B307 - Medium)
+@app.get("/calculate")
+def calculate(expression: str):
+    result = eval(expression)
+    return {"expression": expression, "result": result}
