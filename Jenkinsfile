@@ -26,10 +26,10 @@ pipeline {
         // 3. مرحلة تشغيل الخدمات بالترتيب الصحيح
         stage('Build & Run Services via Docker Compose') {
             steps {
-                // تشغيل قاعدة البيانات أولاً والانتظار حتى تكتمل تهيئتها
+                // تشغيل قاعدة البيانات
                 bat 'docker-compose up -d db'
                 bat 'ping 127.0.0.1 -n 8 > nul'
-                // بناء وتشغيل حاوية التطبيق بعد جهوزية قاعدة البيانات
+                // بناء وتشغيل حاوية التطبيق
                 bat 'docker-compose up -d --build web'
                 bat 'ping 127.0.0.1 -n 4 > nul'
             }

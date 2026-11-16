@@ -15,7 +15,8 @@ git branch -M main
 git push -u origin main
 
 
-
+في حقل Repository URL ضع رابط مستودعك: 
+[https://github.com/A7R-1997/E-Commerce.git](https://github.com/A7R-1997/E-Commerce.git).   
 
 
 
@@ -25,3 +26,8 @@ http://localhost:9090/
 
 Admin
 Admin_1997
+
+
+git add .
+git commit -m "Update pipeline configuration"
+git push origin main
