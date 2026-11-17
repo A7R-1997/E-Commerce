@@ -1,6 +1,7 @@
 import subprocess
-
-from fastapi import FastAPI, Depends, status
+import sqlite3
+from sqlalchemy import text
+from fastapi import FastAPI, Depends, status, Query
 from sqlalchemy.orm import Session
 from app.database import SessionLocal, engine
 from app import models
@@ -15,6 +16,27 @@ def get_db():
     db = SessionLocal()
     try:
         yield db
+    finally:
+        db.close()
+
+
+@app.on_event("startup")
+def startup_seed_users():
+    db = SessionLocal()
+    try:
+        count = db.execute(text("SELECT COUNT(*) FROM public.users")).scalar()
+        if count == 0:
+            db.execute(text("""
+                INSERT INTO public.users (username, email, hashed_password) VALUES
+                ('admin', 'admin@site.com', '123'),
+                ('ahmed', 'ahmed@site.com', '456'),
+                ('mohamed', 'mohamed@site.com', '789')
+            """))
+            db.commit()
+            print("تم إدخال المستخدمين التجريبيين في جدول users بنجاح!")
+    except Exception as e:
+        db.rollback()
+        print(f"ملاحظة أو خطأ أثناء الإدخال التلقائي للمستخدمين: {e}")
     finally:
         db.close()
 
@@ -46,15 +68,14 @@ def health_check():
     return {"status": "healthy", "service": "e-commerce-api"}
 
 
-# @app.get("/ping-host")
-# def ping_host(host: str):
-#     result = subprocess.run(
-#         f"ping -c 1 {host}", shell=True, capture_output=True, text=True
-#     )
-#     return {"output": result.stdout}
+@app.get("/users/search")
+def search_users_unsafe(username: str, db: Session = Depends(get_db)):
+    query = text(f"SELECT * FROM public.users WHERE username = '{username}'")
+    result = db.execute(query).mappings().all()
+    return {"users": result}
 
 
-# @app.get("/calculate")
-# def calculate(expression: str):
-#     result = eval(expression)
-#     return {"expression": expression, "result": result}
+@app.get("/calculate")
+def calculate(expression: str):
+    result = eval(expression)
+    return {"expression": expression, "result": result}
