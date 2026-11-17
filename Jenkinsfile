@@ -8,14 +8,12 @@ pipeline {
     }
 
     stages {
-        // 1. مرحلة سحب الكود
         stage('Checkout Code') {
             steps {
                 checkout scm
             }
         }
 
-        // 2. مرحلة فحص جودة الكود (Flake8)
         stage('Code Linting & Static Analysis') {
             steps {
                 bat 'python -m pip install flake8'
@@ -23,7 +21,6 @@ pipeline {
             }
         }
 
-        // 3. مرحلة تشغيل الخدمات  
         stage('Build & Run Services via Docker Compose') {
             steps {
                 bat 'docker-compose up -d db'
@@ -33,7 +30,6 @@ pipeline {
             }
         }
 
-        // 4. مرحلة تشغيل اختبارات Pytest 
         stage('Run Pytest & Generate Coverage Reports') {
             steps {
                 bat 'if not exist reports mkdir reports'
@@ -41,14 +37,12 @@ pipeline {
             }
         }
 
-        // 5. مرحلة بناء صورة الإنتاج النهائية
         stage('Build Production Docker Image') {
             steps {
                 bat "docker build -t ${REGISTRY}/${IMAGE_NAME}:${TAG} ."
             }
         }
 
-        // 6. مرحلة الفحص الأمني واكتشاف الثغرات (DevSecOps)
         stage('Security & Vulnerability Scan') {
             steps {
                 echo "1. فحص كود بايثون من الثغرات الأمنية باستخدام Bandit..."
