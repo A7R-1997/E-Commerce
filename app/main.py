@@ -1,5 +1,3 @@
-import subprocess
-import sqlite3
 from sqlalchemy import text
 from fastapi import FastAPI, Depends, status, Query
 from sqlalchemy.orm import Session

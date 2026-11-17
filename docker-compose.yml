@@ -7,7 +7,7 @@ services:
       - "8085:8000"
     depends_on:
       db:
-        condition: service_healthy   # <--- الانتظار حتى تصبح القاعدة جاهزة تماماً
+        condition: service_healthy  
     environment:
       - DATABASE_URL=postgresql://postgres:1997@db/ecommerce_db
     volumes:

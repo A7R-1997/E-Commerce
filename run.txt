@@ -43,3 +43,7 @@ Admin_1997
 git add .
 git commit -m "Update pipeline configuration"
 git push origin main
+
+
+docker-compose up -d --build
+docker-compose exec -T -e PYTHONPATH=. web pytest --cov=app --junitxml=reports/pytest-results.xml
