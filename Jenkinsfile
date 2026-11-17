@@ -23,19 +23,17 @@ pipeline {
             }
         }
 
-        // 3. مرحلة تشغيل الخدمات بالترتيب الصحيح
+        // 3. مرحلة تشغيل الخدمات  
         stage('Build & Run Services via Docker Compose') {
             steps {
-                // تشغيل قاعدة البيانات
                 bat 'docker-compose up -d db'
                 bat 'ping 127.0.0.1 -n 8 > nul'
-                // بناء وتشغيل حاوية التطبيق
                 bat 'docker-compose up -d --build web'
                 bat 'ping 127.0.0.1 -n 4 > nul'
             }
         }
 
-        // 4. مرحلة تشغيل اختبارات Pytest واستخراج التقارير
+        // 4. مرحلة تشغيل اختبارات Pytest 
         stage('Run Pytest & Generate Coverage Reports') {
             steps {
                 bat 'if not exist reports mkdir reports'

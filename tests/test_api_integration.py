@@ -1,6 +1,12 @@
+
+# الهدف: التأكد أن الخدمة تستجيب وترجع البيانات الصحيحة
+
 def test_health_check(client):
+    # نرسل طلب GET إلى مسار /health
     response = client.get("/health")
+
     assert response.status_code == 200
+
     assert response.json() == {"status": "healthy", "service": "e-commerce-api"}
 
 def test_create_and_get_product(client):
@@ -10,12 +16,19 @@ def test_create_and_get_product(client):
         "price": 1250.50,
         "stock": 10
     }
+
     response = client.post("/products/", json=product_data)
+
     assert response.status_code == 201
+
     data = response.json()
+
     assert data["name"] == product_data["name"]
+
     assert "id" in data
 
     get_response = client.get("/products/")
+
     assert get_response.status_code == 200
+
     assert len(get_response.json()) > 0
