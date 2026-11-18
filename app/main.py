@@ -31,7 +31,7 @@ def startup_seed_users():
                 ('mohamed', 'mohamed@site.com', '789')
             """))
             db.commit()
-            print("تم إدخال المستخدمين التجريبيين في جدول users بنجاح!")
+            print("تم إدخال المستخدمين بنجاح!")
     except Exception as e:
         db.rollback()
         print(f"ملاحظة أو خطأ أثناء الإدخال التلقائي للمستخدمين: {e}")
