@@ -41,7 +41,7 @@ Admin_1997
 
 
 git add .
-git commit -m "Update pipeline configuration"
+git commit -m "Update"
 git push origin main
 
 
