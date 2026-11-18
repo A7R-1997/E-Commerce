@@ -29,21 +29,3 @@ def test_create_and_get_product(client):
     assert get_response.status_code == 200
 
     assert len(get_response.json()) > 0
-
-
-# def test_sql_injection_vulnerability(client):
-#     malicious_input = "' OR '1'='1"
-#     response = client.get(f"/users/search?username={malicious_input}")
-    
-#     assert response.status_code == 200
-#     data = response.json()
-#     assert "users" in data
-
-
-# def test_rce_vulnerability(client):
-#     expression_payload = "10 * 5"
-#     response = client.get(f"/calculate?expression={expression_payload}")
-    
-#     assert response.status_code == 200
-#     data = response.json()
-#     assert data["result"] == 50
