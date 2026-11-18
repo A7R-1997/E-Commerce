@@ -1,8 +1,5 @@
 
-# الهدف: التأكد أن الخدمة تستجيب وترجع البيانات الصحيحة
-
 def test_health_check(client):
-    # نرسل طلب GET إلى مسار /health
     response = client.get("/health")
 
     assert response.status_code == 200
