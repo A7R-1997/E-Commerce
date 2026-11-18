@@ -66,14 +66,14 @@ def health_check():
     return {"status": "healthy", "service": "e-commerce-api"}
 
 
-@app.get("/users/search")
-def search_users_unsafe(username: str, db: Session = Depends(get_db)):
-    query = text(f"SELECT * FROM public.users WHERE username = '{username}'")
-    result = db.execute(query).mappings().all()
-    return {"users": result}
+# @app.get("/users/search")
+# def search_users_unsafe(username: str, db: Session = Depends(get_db)):
+#     query = text(f"SELECT * FROM public.users WHERE username = '{username}'")
+#     result = db.execute(query).mappings().all()
+#     return {"users": result}
 
 
-@app.get("/calculate")
-def calculate(expression: str):
-    result = eval(expression)
-    return {"expression": expression, "result": result}
+# @app.get("/calculate")
+# def calculate(expression: str):
+#     result = eval(expression)
+#     return {"expression": expression, "result": result}
