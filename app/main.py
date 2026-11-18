@@ -73,7 +73,7 @@ def search_users_unsafe(username: str, db: Session = Depends(get_db)):
     return {"users": result}
 
 
-# @app.get("/calculate")
-# def calculate(expression: str):
-#     result = eval(expression)
-#     return {"expression": expression, "result": result}
+@app.get("/calculate")
+def calculate(expression: str):
+    result = eval(expression)
+    return {"expression": expression, "result": result}
